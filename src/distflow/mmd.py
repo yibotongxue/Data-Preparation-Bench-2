@@ -4,11 +4,11 @@ import numpy as np
 from pydantic import BaseModel
 from scipy.spatial.distance import cdist
 
-from data_preparation_bench.data.types import DatasetProcessOutputItem
-from data_preparation_bench.embed.base import BaseEmbed
-from data_preparation_bench.utils import logger
-from data_preparation_bench.utils.stats import embedding_list_summary, ndarray_summary
-from data_preparation_bench.utils.timing import timing_context
+from distflow.data.types import DatasetProcessOutputItem
+from distflow.embed.base import BaseEmbed
+from distflow.utils import logger
+from distflow.utils.stats import embedding_list_summary, ndarray_summary
+from distflow.utils.timing import timing_context
 
 
 class MetricsResult(BaseModel):  # type: ignore[misc]
@@ -67,7 +67,7 @@ class MMDDistance:
 
         return k.astype(np.float64)
 
-    async def async_compute(
+    def compute(
         self, src: list[DatasetProcessOutputItem], tgt: list[DatasetProcessOutputItem]
     ) -> list[MetricsResult]:
         """计算两个数据集之间的距离（异步）.
@@ -82,10 +82,10 @@ class MMDDistance:
         logger.info(f"开始嵌入计算, 源数据集: {len(src)} 条, 目标数据集: {len(tgt)} 条")
         with timing_context("嵌入计算"):
             logger.debug("开始计算源数据集嵌入...")
-            embedded_src_results = await self.embedder.embed(src)
+            embedded_src_results = self.embedder.embed(src)
             logger.debug(f"源数据集嵌入完成, 共 {len(embedded_src_results)} 条")
             logger.debug("开始计算目标数据集嵌入...")
-            embedded_tgt_results = await self.embedder.embed(tgt)
+            embedded_tgt_results = self.embedder.embed(tgt)
             logger.debug(f"目标数据集嵌入完成, 共 {len(embedded_tgt_results)} 条")
 
         # 提取嵌入向量

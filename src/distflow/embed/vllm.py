@@ -1,14 +1,11 @@
 from __future__ import annotations
 
-import asyncio
 from typing import TYPE_CHECKING, override
 
-from vllm.inputs.data import TokensPrompt
-
-from data_preparation_bench.embed.base import BaseEmbed
-from data_preparation_bench.embed.types import EmbeddingInputItem, EmbeddingResult
-from data_preparation_bench.utils import logger
-from data_preparation_bench.utils.timing import timing_context
+from distflow.embed.base import BaseEmbed
+from distflow.embed.types import EmbeddingInputItem, EmbeddingResult
+from distflow.utils import logger
+from distflow.utils.timing import timing_context
 
 if TYPE_CHECKING:
     from vllm import LLM
@@ -52,7 +49,7 @@ class VllmEmbed(BaseEmbed):
 
             self._model = LLM(
                 model=self._model_name,
-                task="embed",
+                # task="embed",
                 enforce_eager=True,
                 gpu_memory_utilization=self._gpu_memory_utilization,
                 tensor_parallel_size=self._tensor_parallel_size,
@@ -75,7 +72,7 @@ class VllmEmbed(BaseEmbed):
         return self._tokenizer
 
     @override
-    async def embed(self, dataset: list[EmbeddingInputItem]) -> list[EmbeddingResult]:
+    def embed(self, dataset: list[EmbeddingInputItem]) -> list[EmbeddingResult]:
         """异步执行嵌入计算.
 
         Args:
@@ -84,6 +81,14 @@ class VllmEmbed(BaseEmbed):
         Returns:
             嵌入结果列表
         """
+        import vllm
+        from packaging import version
+
+        if version.parse(vllm.__version__) >= version.parse("0.19.0"):
+            from vllm.inputs.llm import TokensPrompt  # type: ignore
+        else:
+            from vllm.inputs.data import TokensPrompt  # type: ignore
+
         logger.info(f"开始嵌入计算，数据量: {len(dataset)}")
 
         # Ensure model is initialized before use
@@ -116,9 +121,7 @@ class VllmEmbed(BaseEmbed):
         logger.info("开始模型推理...")
         with timing_context("模型推理"):
             # vLLM 的 embed 是同步方法，使用 to_thread 在后台线程执行
-            outputs = await asyncio.to_thread(
-                self.model.embed, converted_input, use_tqdm=True
-            )
+            outputs = self.model.embed(converted_input, use_tqdm=True)
         logger.info(f"嵌入计算完成，输出 {len(outputs)} 条结果")
         return [
             EmbeddingResult(

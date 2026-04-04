@@ -1,6 +1,6 @@
 from abc import ABC, abstractmethod
 
-from data_preparation_bench.embed.types import EmbeddingInputItem, EmbeddingResult
+from distflow.embed.types import EmbeddingInputItem, EmbeddingResult
 
 
 class BaseEmbed(ABC):
@@ -8,7 +8,7 @@ class BaseEmbed(ABC):
         self.model_name = model_name
 
     @abstractmethod
-    async def embed(self, dataset: list[EmbeddingInputItem]) -> list[EmbeddingResult]:
+    def embed(self, dataset: list[EmbeddingInputItem]) -> list[EmbeddingResult]:
         """异步嵌入计算.
 
         Args:
