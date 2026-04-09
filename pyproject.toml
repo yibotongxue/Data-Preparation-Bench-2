@@ -1,6 +1,6 @@
 [project]
 name = "distflow"
-version = "1.0.2"
+version = "1.0.3"
 description = "Distance Computation Package for Data Preparation Bench"
 readme = "README.md"
 requires-python = ">=3.10"

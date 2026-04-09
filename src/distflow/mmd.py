@@ -173,6 +173,7 @@ class MMDDistance:
             if self.bias:
                 # 有偏 MMD 估计
                 mmd_value = k_xx_mean + k_yy_mean - 2 * k_xy_mean
+                mmd_value = np.sqrt(mmd_value)
                 logger.debug(f"有偏 MMD 估计: {mmd_value:.6f}")
             else:
                 # 无偏 MMD 估计：排除对角线元素
@@ -181,6 +182,7 @@ class MMDDistance:
                     + (tgt_tgt.sum() - n_tgt) / (n_tgt * (n_tgt - 1))
                     - 2 * k_xy_mean
                 )
+                mmd_value = np.sqrt(mmd_value)
                 logger.debug(f"无偏 MMD 估计: {mmd_value:.6f}")
 
         # 获取核函数参数（如 RBF sigma）
