@@ -4,7 +4,13 @@
 
 ## Overview
 
-DataPrep-Bench is the first unified, downstream-grounded benchmark that jointly evaluates how well LLMs, agents, and data workflows can prepare training data end to end. It covers two complementary tracks: Data Construction, which transforms raw sources into SFT data, and Data Quality Evaluation, which predicts the downstream utility of candidate datasets. It also ships two strong baselines: Data-Construction-Skill for skill-driven agentic construction and the Distributional Alignment Score (DAS), a training-free, MMD-based quality estimator. Both tracks are tested under shared domains, base models, training protocols, and downstream benchmarks, so methods are compared by their actual downstream impact.
+DataPrep-Bench is the first unified, downstream-grounded benchmark that jointly evaluates how well LLMs, agents, and data workflows can prepare training data end to end. It covers three complementary tracks:
+
+- **Data Construction** — transforms raw sources into SFT data.
+- **Data Selection** — selects high-utility subsets from candidate pools.
+- **Data Quality Evaluation** — predicts the downstream utility of candidate datasets.
+
+It also ships strong baselines for each track: Data-Construction-Skill for skill-driven agentic construction, a unified Data-Selection framework with ten selector strategies, and the Distributional Alignment Score (DAS), a training-free, MMD-based quality estimator. All tracks are tested under shared domains, base models, training protocols, and downstream benchmarks, so methods are compared by their actual downstream impact.
 
 ## Data Construction
 
@@ -60,6 +66,63 @@ Please refer to [Experiment.md](./Experiment.md) for detailed configures we empl
 ### Evaluation
 
 The evaluation codes are in [Data-Agent-Evaluation](./Data-Agent-Evaluation/). You can use the [script](./Data-Agent-Evaluation/scripts/run_all_bench.sh) to run evaluation for the models trained in the last step. Please refer to [README.md](./Data-Agent-Evaluation/README.md) for instruction to use the script and [Experiment.md](./Experiment.md) for detailed configurations for evaluation.
+
+## Data Selection
+
+The Data Selection framework ([data-selection](./data-selection)) selects high-utility subsets from large candidate SFT pools. It unifies random baselines, length and perplexity filters, embedding similarity, quality scoring, diversity algorithms, and LLM-as-a-judge methods behind a single `Selector` protocol, making it easy to compare selection strategies under identical training and evaluation conditions.
+
+### Selector Overview
+
+| Selector | Strategy |
+|----------|----------|
+| `RandomSelector` | Random baseline |
+| `SourceBalancedRandomSelector` | Source-balanced random sampling |
+| `LengthBasedSelector` | Shortest / longest samples |
+| `PerplexityBasedSelector` | Perplexity-based selection (`low` / `high` / `mid`) |
+| `EmbeddingSimilaritySelector` | NEAR-style similarity to a target set |
+| `DeitaQualitySelector` | Quality × complexity scoring |
+| `QualityScorerSelector` | FineWeb-Edu / PairQual quality scoring |
+| `DiversityKCenterSelector` | TSDS diversity K-Center |
+| `LLMAsSelector` | LLM multi-dimensional scoring |
+| `CompositeSelector` | Chain multiple selectors |
+
+### Installation
+
+```bash
+cd data-selection
+uv sync
+```
+
+### Quick Start
+
+```python
+from data_selection import RandomSelector
+from data_selection.runner import run_selection
+
+selector = RandomSelector(k=100, seed=42)
+run_selection(
+    selector,
+    input_path="data/input.jsonl",
+    output_path="data/output_random.jsonl",
+)
+```
+
+`run_selection` also supports multiple selection budgets in one call. For score-based selectors, scoring runs once at `max(k)` and results are truncated for smaller `k` values:
+
+```python
+run_selection(
+    selector,
+    input_path="data/input.jsonl",
+    output_path="data/output_k{k}.jsonl",
+    k=[1000, 10000, 100000],
+)
+```
+
+Please refer to [data-selection/README.md](./data-selection/README.md) for a complete guide to all selectors, input formats, score caching, and development commands.
+
+### Evaluation
+
+After selecting a subset, train a model on it with [LlamaFactory](https://github.com/hiyouga/LlamaFactory) and evaluate with the [Data-Agent-Evaluation](./Data-Agent-Evaluation/) harness. Please refer to [Experiment.md](./Experiment.md) for selection results across finance, law, medicine, math, general, and science domains.
 
 ## Data Quality
 
